@@ -1,11 +1,11 @@
 "use client";
 
-import { LiveTick } from "@/lib/types";
+import { WatchlistQuote } from "@/lib/types";
 
 type LiveWatchlistProps = {
-  ticks: LiveTick[];
+  ticks: WatchlistQuote[];
   loading: boolean;
-  error: string;
+  error?: string;
 };
 
 export function LiveWatchlist({ ticks, loading, error }: LiveWatchlistProps) {
@@ -16,12 +16,12 @@ export function LiveWatchlist({ ticks, loading, error }: LiveWatchlistProps) {
     return <div className="card text-sm text-rose-300">{error}</div>;
   }
   if (!ticks.length) {
-    return <div className="card text-sm text-slate-300">Live feed unavailable. Check backend live market service.</div>;
+    return <div className="card text-sm text-slate-300">No watchlist quotes available.</div>;
   }
 
   return (
     <div className="card overflow-x-auto">
-      <h2 className="mb-3 text-lg font-semibold">Live F&O Watchlist</h2>
+      <h2 className="mb-3 text-lg font-semibold">Watchlist Prices</h2>
       <table className="min-w-full text-sm">
         <thead>
           <tr className="border-b border-border text-left text-slate-400">
@@ -47,7 +47,7 @@ export function LiveWatchlist({ ticks, loading, error }: LiveWatchlistProps) {
               <td className={(tick.change_percent || 0) >= 0 ? "text-emerald-300" : "text-rose-300"}>
                 {tick.change_percent !== null ? `${tick.change_percent.toFixed(2)}%` : "-"}
               </td>
-              <td>{new Date(tick.tick_timestamp).toLocaleTimeString("en-IN", { hour12: false, timeZone: "Asia/Kolkata" })}</td>
+              <td>{new Date(tick.timestamp).toLocaleTimeString("en-IN", { hour12: false, timeZone: "Asia/Kolkata" })}</td>
             </tr>
           ))}
         </tbody>

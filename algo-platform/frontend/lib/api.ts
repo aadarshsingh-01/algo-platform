@@ -1,5 +1,5 @@
 import { mockAlerts, mockStrategies, mockSummary } from "@/lib/mock";
-import { Alert, DashboardSummary, LiveTickSnapshot, MarketStatus, Strategy } from "@/lib/types";
+import { Alert, DashboardSummary, LiveTickSnapshot, MarketStatus, Strategy, WatchlistQuote } from "@/lib/types";
 
 const API_BASE = process.env.NEXT_PUBLIC_API_BASE_URL || "http://localhost:8000/api/v1";
 
@@ -171,4 +171,8 @@ export function connectLiveMarketSocket(token?: string): WebSocket {
   const protocol = window.location.protocol === "https:" ? "wss" : "ws";
   const host = window.location.host;
   return new WebSocket(`${protocol}://${host}/api/v1/market-data/ws/live${query}`);
+}
+
+export async function fetchWatchlistQuotes(): Promise<WatchlistQuote[]> {
+  return request<WatchlistQuote[]>("/market-data/watchlist-quotes");
 }

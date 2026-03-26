@@ -74,3 +74,16 @@ class MarketStatus(BaseModel):
 class LiveTickSnapshot(BaseModel):
     ticks: list[LiveTick]
     market_status: MarketStatus
+
+
+class WatchlistQuote(BaseModel):
+    instrument_token: int
+    tradingsymbol: str
+    exchange: str
+    last_price: float | None
+    open: float | None
+    high: float | None
+    low: float | None
+    close: float | None
+    change_percent: float | None
+    timestamp: datetime

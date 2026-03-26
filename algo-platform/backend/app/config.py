@@ -15,6 +15,8 @@ class Settings(BaseSettings):
     live_watchlist_symbols: str = ""
     live_market_mock: bool = True
     market_timezone: str = "Asia/Kolkata"
+    quote_watchlist_tokens: str = ""
+    quote_watchlist_symbols: str = ""
 
     model_config = SettingsConfigDict(env_file=".env", case_sensitive=False, extra="ignore")
 

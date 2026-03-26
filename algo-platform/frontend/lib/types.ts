@@ -65,3 +65,16 @@ export type LiveTickSnapshot = {
 export type LiveFeedMessage =
   | { type: "tick"; data: LiveTick }
   | { type: "status"; data: MarketStatus };
+
+export type WatchlistQuote = {
+  instrument_token: number;
+  tradingsymbol: string;
+  exchange: string;
+  last_price: number | null;
+  open: number | null;
+  high: number | null;
+  low: number | null;
+  close: number | null;
+  change_percent: number | null;
+  timestamp: string;
+};

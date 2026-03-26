@@ -31,3 +31,8 @@ class KiteService:
             continuous=False,
             oi=True,
         )
+
+    def fetch_quotes(self, instruments: list[str]) -> dict:
+        if not instruments:
+            return {}
+        return self.client.quote(instruments)

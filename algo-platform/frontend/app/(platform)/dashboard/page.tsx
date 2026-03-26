@@ -5,15 +5,15 @@ import { LiveWatchlist } from "@/components/live-watchlist";
 import { MarketClock } from "@/components/market-clock";
 import { SummaryCard } from "@/components/summary-card";
 import { StrategyTable } from "@/components/strategy-table";
-import { connectLiveMarketSocket, fetchLiveSnapshot, getRecentAlerts, getSummary, getTopStrategies } from "@/lib/api";
+import { fetchMarketStatus, fetchWatchlistQuotes, getRecentAlerts, getSummary, getTopStrategies } from "@/lib/api";
 import { mockAlerts, mockStrategies, mockSummary } from "@/lib/mock";
-import { Alert, DashboardSummary, LiveFeedMessage, LiveTick, MarketStatus, Strategy } from "@/lib/types";
+import { Alert, DashboardSummary, MarketStatus, Strategy, WatchlistQuote } from "@/lib/types";
 
 export default function DashboardPage() {
   const [summary, setSummary] = useState<DashboardSummary>(mockSummary);
   const [strategies, setStrategies] = useState<Strategy[]>(mockStrategies);
   const [alerts, setAlerts] = useState<Alert[]>(mockAlerts);
-  const [ticks, setTicks] = useState<LiveTick[]>([]);
+  const [ticks, setTicks] = useState<WatchlistQuote[]>([]);
   const [marketStatus, setMarketStatus] = useState<MarketStatus | null>(null);
   const [liveLoading, setLiveLoading] = useState(true);
   const [liveError, setLiveError] = useState("");
@@ -25,54 +25,27 @@ export default function DashboardPage() {
   }, []);
 
   useEffect(() => {
-    let ws: WebSocket | null = null;
-    let reconnectTimer: ReturnType<typeof setTimeout> | null = null;
-
-    const bootstrap = async () => {
+    let intervalId: ReturnType<typeof setInterval> | null = null;
+    const loadQuotes = async () => {
       try {
-        const snapshot = await fetchLiveSnapshot();
-        setTicks(snapshot.ticks || []);
-        setMarketStatus(snapshot.market_status);
+        const [quotes, status] = await Promise.all([
+          fetchWatchlistQuotes(),
+          fetchMarketStatus()
+        ]);
+        setTicks(quotes);
+        setMarketStatus(status);
+        setLiveError("");
       } catch {
-        setLiveError("Unable to load live snapshot.");
+        setLiveError("Unable to fetch watchlist quotes.");
       } finally {
         setLiveLoading(false);
       }
     };
-
-    const connect = () => {
-      const token = typeof window !== "undefined" ? localStorage.getItem("access_token") || undefined : undefined;
-      ws = connectLiveMarketSocket(token);
-      ws.onmessage = (event) => {
-        try {
-          const message = JSON.parse(event.data) as LiveFeedMessage;
-          if (message.type === "tick") {
-            setTicks((prev) => {
-              const next = [...prev];
-              const idx = next.findIndex((x) => x.instrument_token === message.data.instrument_token);
-              if (idx >= 0) next[idx] = message.data;
-              else next.push(message.data);
-              return next.sort((a, b) => a.instrument_token - b.instrument_token);
-            });
-          } else if (message.type === "status") {
-            setMarketStatus(message.data);
-          }
-        } catch {
-          // Ignore malformed payloads.
-        }
-      };
-      ws.onerror = () => setLiveError("Live connection error. Reconnecting...");
-      ws.onclose = () => {
-        reconnectTimer = setTimeout(connect, 3000);
-      };
-    };
-
-    bootstrap();
-    connect();
+    loadQuotes();
+    intervalId = setInterval(loadQuotes, 10000);
 
     return () => {
-      if (reconnectTimer) clearTimeout(reconnectTimer);
-      if (ws) ws.close();
+      if (intervalId) clearInterval(intervalId);
     };
   }, []);
 
