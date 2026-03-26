@@ -3,7 +3,7 @@ from fastapi.middleware.cors import CORSMiddleware
 
 from app.config import settings
 from app.database import SessionLocal
-from app.routers import auth, dashboard, health, strategies
+from app.routers import auth, dashboard, health, market_data, strategies
 from app.seed import seed
 
 app = FastAPI(title=settings.app_name)
@@ -31,4 +31,5 @@ api_prefix = "/api/v1"
 app.include_router(auth.router, prefix=api_prefix)
 app.include_router(dashboard.router, prefix=api_prefix)
 app.include_router(strategies.router, prefix=api_prefix)
+app.include_router(market_data.router, prefix=api_prefix)
 app.include_router(health.router, prefix=api_prefix)
