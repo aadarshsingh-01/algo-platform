@@ -8,6 +8,10 @@ from app.models.instrument import Instrument
 from app.services.kite_service import KiteService
 
 
+def _empty_to_none(value):
+    return None if value == "" else value
+
+
 def sync_instruments(db: Session, exchange: str | None = None) -> tuple[int, int]:
     service = KiteService()
     records = service.fetch_instruments(exchange=exchange)
@@ -24,12 +28,17 @@ def sync_instruments(db: Session, exchange: str | None = None) -> tuple[int, int
         else:
             updated += 1
 
-        instrument.exchange_token = int(item["exchange_token"]) if item.get("exchange_token") is not None else None
+        exchange_token = _empty_to_none(item.get("exchange_token"))
+        last_price = _empty_to_none(item.get("last_price"))
+        expiry = _empty_to_none(item.get("expiry"))
+        strike = _empty_to_none(item.get("strike"))
+
+        instrument.exchange_token = int(exchange_token) if exchange_token is not None else None
         instrument.tradingsymbol = str(item["tradingsymbol"])
-        instrument.name = item.get("name")
-        instrument.last_price = float(item["last_price"]) if item.get("last_price") is not None else None
-        instrument.expiry = item.get("expiry")
-        instrument.strike = float(item["strike"]) if item.get("strike") is not None else None
+        instrument.name = item.get("name") or ""
+        instrument.last_price = float(last_price) if last_price is not None else None
+        instrument.expiry = expiry
+        instrument.strike = float(strike) if strike is not None else 0.0
         instrument.tick_size = float(item.get("tick_size", 0.05))
         instrument.lot_size = int(item.get("lot_size", 1))
         instrument.instrument_type = str(item.get("instrument_type", "EQ"))
