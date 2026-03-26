@@ -22,10 +22,15 @@ def main() -> None:
 
     session = kite.generate_session(request_token, api_secret=settings.kite_api_secret)
     access_token = session.get("access_token")
+    user_name = session.get("user_name")
 
     print()
     print("KITE ACCESS TOKEN:")
     print(access_token)
+    if user_name:
+        print()
+        print("KITE USER NAME:")
+        print(user_name)
 
 
 if __name__ == "__main__":
