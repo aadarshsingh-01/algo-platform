@@ -5,6 +5,7 @@ from app.config import settings
 from app.database import SessionLocal
 from app.routers import auth, dashboard, health, market_data, strategies
 from app.seed import seed
+from app.services.live_market import LiveMarketService
 
 app = FastAPI(title=settings.app_name)
 
@@ -18,13 +19,22 @@ app.add_middleware(
 
 
 @app.on_event("startup")
-def on_startup() -> None:
+async def on_startup() -> None:
     # Seed only; schema is expected to be managed by Alembic.
     db = SessionLocal()
     try:
         seed(db)
     finally:
         db.close()
+    app.state.live_market_service = LiveMarketService()
+    await app.state.live_market_service.start()
+
+
+@app.on_event("shutdown")
+async def on_shutdown() -> None:
+    service = getattr(app.state, "live_market_service", None)
+    if service:
+        await service.stop()
 
 
 api_prefix = "/api/v1"

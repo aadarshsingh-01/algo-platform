@@ -1,6 +1,7 @@
 from datetime import datetime
+import asyncio
 
-from fastapi import APIRouter, Depends, Query
+from fastapi import APIRouter, Depends, Query, Request, WebSocket, WebSocketDisconnect, status
 from sqlalchemy import and_, select
 from sqlalchemy.orm import Session
 
@@ -14,8 +15,12 @@ from app.schemas.market_data import (
     HistoricalSyncRequest,
     HistoricalSyncResponse,
     InstrumentResponse,
+    LiveTickSnapshot,
+    MarketStatus,
 )
+from app.security import decode_access_token
 from app.scripts.import_candles_5m import import_candles
+from app.services.live_market import LiveMarketService
 
 router = APIRouter(prefix="/market-data", tags=["market-data"])
 
@@ -78,3 +83,52 @@ def get_candles(
         .limit(limit)
     )
     return db.execute(stmt).scalars().all()
+
+
+def _live_service(request: Request) -> LiveMarketService:
+    return request.app.state.live_market_service
+
+
+@router.get("/live", response_model=LiveTickSnapshot)
+def get_live_snapshot(
+    request: Request,
+    current_user: User = Depends(get_current_user),
+):
+    _ = current_user
+    service = _live_service(request)
+    return LiveTickSnapshot(ticks=service.get_latest_ticks(), market_status=service.market_status())
+
+
+@router.get("/market-status", response_model=MarketStatus)
+def get_market_status(
+    request: Request,
+    current_user: User = Depends(get_current_user),
+):
+    _ = current_user
+    service = _live_service(request)
+    return MarketStatus(**service.market_status())
+
+
+@router.websocket("/ws/live")
+async def ws_live_market(websocket: WebSocket):
+    # Minimal WS auth: optional bearer token in query. If provided and invalid, reject.
+    token = websocket.query_params.get("token")
+    if token:
+        try:
+            decode_access_token(token)
+        except Exception:
+            await websocket.close(code=status.WS_1008_POLICY_VIOLATION)
+            return
+
+    await websocket.accept()
+    service: LiveMarketService = websocket.app.state.live_market_service
+    service.add_client(websocket)
+    await websocket.send_json({"type": "status", "data": service.market_status()})
+    try:
+        while True:
+            await asyncio.sleep(5)
+            await websocket.send_json({"type": "status", "data": service.market_status()})
+    except WebSocketDisconnect:
+        service.remove_client(websocket)
+    except Exception:
+        service.remove_client(websocket)

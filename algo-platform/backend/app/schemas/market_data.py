@@ -1,4 +1,5 @@
 from datetime import datetime
+from typing import Literal
 
 from pydantic import BaseModel, ConfigDict
 
@@ -39,3 +40,37 @@ class HistoricalSyncResponse(BaseModel):
     requested: int
     inserted: int
     skipped_duplicates: int
+
+
+class LiveTick(BaseModel):
+    instrument_token: int
+    tradingsymbol: str | None
+    exchange: str | None
+    last_price: float | None
+    last_quantity: int | None
+    average_price: float | None
+    volume: int | None
+    buy_quantity: int | None
+    sell_quantity: int | None
+    open: float | None
+    high: float | None
+    low: float | None
+    close: float | None
+    change_percent: float | None
+    last_trade_time: datetime | None
+    tick_timestamp: datetime
+
+
+class MarketStatus(BaseModel):
+    server_time: datetime
+    market_time: datetime
+    timezone: str
+    is_market_open: bool
+    status: Literal["pre_open", "live", "closed"]
+    status_label: str
+    color: Literal["green", "amber", "red"]
+
+
+class LiveTickSnapshot(BaseModel):
+    ticks: list[LiveTick]
+    market_status: MarketStatus

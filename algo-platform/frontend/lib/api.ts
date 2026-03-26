@@ -1,7 +1,8 @@
 import { mockAlerts, mockStrategies, mockSummary } from "@/lib/mock";
-import { Alert, DashboardSummary, Strategy } from "@/lib/types";
+import { Alert, DashboardSummary, LiveTickSnapshot, MarketStatus, Strategy } from "@/lib/types";
 
 const API_BASE = process.env.NEXT_PUBLIC_API_BASE_URL || "http://localhost:8000/api/v1";
+const WS_BASE = API_BASE.replace(/^http/, "ws");
 
 function getToken() {
   if (typeof window === "undefined") return "";
@@ -135,4 +136,38 @@ export async function startStrategy(id: number): Promise<Strategy> {
 export async function pauseStrategy(id: number): Promise<Strategy> {
   const data = await request<ApiStrategy>(`/strategies/${id}/pause`, { method: "POST" });
   return normalizeStrategy(data);
+}
+
+export async function fetchMarketStatus(): Promise<MarketStatus> {
+  const fallback: MarketStatus = {
+    server_time: new Date().toISOString(),
+    market_time: new Date().toISOString(),
+    timezone: "Asia/Kolkata",
+    is_market_open: false,
+    status: "closed",
+    status_label: "Market Closed",
+    color: "red"
+  };
+  try {
+    return await request<MarketStatus>("/market-data/market-status");
+  } catch {
+    return fallback;
+  }
+}
+
+export async function fetchLiveSnapshot(): Promise<LiveTickSnapshot> {
+  const fallback: LiveTickSnapshot = {
+    ticks: [],
+    market_status: await fetchMarketStatus()
+  };
+  try {
+    return await request<LiveTickSnapshot>("/market-data/live");
+  } catch {
+    return fallback;
+  }
+}
+
+export function connectLiveMarketSocket(token?: string): WebSocket {
+  const query = token ? `?token=${encodeURIComponent(token)}` : "";
+  return new WebSocket(`${WS_BASE}/market-data/ws/live${query}`);
 }

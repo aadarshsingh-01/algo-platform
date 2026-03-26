@@ -11,6 +11,10 @@ class Settings(BaseSettings):
     kite_api_key: str = ""
     kite_api_secret: str = ""
     kite_access_token: str = ""
+    live_watchlist_tokens: str = ""
+    live_watchlist_symbols: str = ""
+    live_market_mock: bool = True
+    market_timezone: str = "Asia/Kolkata"
 
     model_config = SettingsConfigDict(env_file=".env", case_sensitive=False, extra="ignore")
 
