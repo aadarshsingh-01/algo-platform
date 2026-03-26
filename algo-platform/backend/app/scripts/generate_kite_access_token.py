@@ -32,6 +32,17 @@ def main() -> None:
         print("KITE USER NAME:")
         print(user_name)
 
+    try:
+        kite.set_access_token(access_token)
+        profile = kite.profile()
+        print()
+        print("VERIFIED ACCESS TOKEN")
+        print("user_name:", profile.get("user_name", "N/A"))
+    except Exception as exc:
+        print()
+        print("TOKEN VERIFICATION FAILED:")
+        print(str(exc))
+
 
 if __name__ == "__main__":
     main()
